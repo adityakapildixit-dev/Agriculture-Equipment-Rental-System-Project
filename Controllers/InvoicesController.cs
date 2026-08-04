@@ -1,111 +1,54 @@
-using Agriculture_Equipment_Rental_System.Data;
 using Agriculture_Equipment_Rental_System.Dto.Invoice;
-using Agriculture_Equipment_Rental_System.Models;
+using Agriculture_Equipment_Rental_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Agriculture_Equipment_Rental_System.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class InvoicesController : ControllerBase
     {
-        private readonly AgriMachineryDbContext _context;
+        private readonly IInvoiceService _invoiceService;
 
-        public InvoicesController(AgriMachineryDbContext context)
+        public InvoicesController(IInvoiceService invoiceService)
         {
-            _context = context;
+            _invoiceService = invoiceService;
         }
 
         // POST: api/Invoice
         [HttpPost]
         public async Task<ActionResult<InvoiceResponseDto>> CreateInvoice(InvoiceCreateDto dto)
         {
-            var bookingExists = await _context.Bookings.AnyAsync(b => b.BookingId == dto.BookingId);
-            if (!bookingExists) return BadRequest("Booking not found.");
-
-            var invoice = new Invoice
-            {
-                BookingId = dto.BookingId,
-                InvoiceDate = dto.InvoiceDate,
-                TotalAmount = dto.TotalAmount,
-                Gst = dto.Gst,
-                Discount = dto.Discount,
-                FinalAmount = dto.FinalAmount
-            };
-
-            _context.Invoices.Add(invoice);
-            await _context.SaveChangesAsync();
-
-            var result = new InvoiceResponseDto
-            {
-                InvoiceId = invoice.InvoiceId,
-                BookingId = invoice.BookingId,
-                InvoiceDate = invoice.InvoiceDate,
-                TotalAmount = invoice.TotalAmount,
-                Gst = invoice.Gst,
-                Discount = invoice.Discount,
-                FinalAmount = invoice.FinalAmount
-            };
-
-            return CreatedAtAction(nameof(GetInvoice), new { id = invoice.InvoiceId }, result);
+            var result = await _invoiceService.CreateInvoiceAsync(dto);
+            if (!result.Success) return BadRequest(result.ErrorMessage);
+            return CreatedAtAction(nameof(GetInvoice), new { id = result.Data!.InvoiceId }, result.Data);
         }
 
         // GET: api/Invoice/5
         [HttpGet("{id}")]
         public async Task<ActionResult<InvoiceResponseDto>> GetInvoice(int id)
         {
-            var invoice = await _context.Invoices.FindAsync(id);
+            var invoice = await _invoiceService.GetInvoiceAsync(id);
             if (invoice == null) return NotFound();
-
-            return new InvoiceResponseDto
-            {
-                InvoiceId = invoice.InvoiceId,
-                BookingId = invoice.BookingId,
-                InvoiceDate = invoice.InvoiceDate,
-                TotalAmount = invoice.TotalAmount,
-                Gst = invoice.Gst,
-                Discount = invoice.Discount,
-                FinalAmount = invoice.FinalAmount
-            };
+            return invoice;
         }
 
         // GET: api/Invoice
         [HttpGet]
         public async Task<ActionResult<IEnumerable<InvoiceResponseDto>>> GetAllInvoices()
         {
-            return await _context.Invoices
-                .Select(invoice => new InvoiceResponseDto
-                {
-                    InvoiceId = invoice.InvoiceId,
-                    BookingId = invoice.BookingId,
-                    InvoiceDate = invoice.InvoiceDate,
-                    TotalAmount = invoice.TotalAmount,
-                    Gst = invoice.Gst,
-                    Discount = invoice.Discount,
-                    FinalAmount = invoice.FinalAmount
-                })
-                .ToListAsync();
+            return await _invoiceService.GetAllInvoicesAsync();
         }
 
         // PUT: api/Invoice/5
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateInvoice(int id, InvoiceCreateDto dto)
         {
-            var invoice = await _context.Invoices.FindAsync(id);
-            if (invoice == null) return NotFound();
-
-            var bookingExists = await _context.Bookings.AnyAsync(b => b.BookingId == dto.BookingId);
-            if (!bookingExists) return BadRequest("Booking not found.");
-
-            invoice.BookingId = dto.BookingId;
-            invoice.InvoiceDate = dto.InvoiceDate;
-            invoice.TotalAmount = dto.TotalAmount;
-            invoice.Gst = dto.Gst;
-            invoice.Discount = dto.Discount;
-            invoice.FinalAmount = dto.FinalAmount;
-
-            await _context.SaveChangesAsync();
+            var result = await _invoiceService.UpdateInvoiceAsync(id, dto);
+            if (result.NotFound) return NotFound();
+            if (!result.Success) return BadRequest(result.ErrorMessage);
             return NoContent();
         }
 
@@ -113,11 +56,8 @@ namespace Agriculture_Equipment_Rental_System.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteInvoice(int id)
         {
-            var invoice = await _context.Invoices.FindAsync(id);
-            if (invoice == null) return NotFound();
-
-            _context.Invoices.Remove(invoice);
-            await _context.SaveChangesAsync();
+            var result = await _invoiceService.DeleteInvoiceAsync(id);
+            if (result.NotFound) return NotFound();
             return NoContent();
         }
     }

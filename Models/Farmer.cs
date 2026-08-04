@@ -24,4 +24,7 @@ public partial class Farmer
     public DateOnly RegistrationDate { get; set; }
 
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+
+
+  
 }

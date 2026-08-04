@@ -1,124 +1,54 @@
-using Agriculture_Equipment_Rental_System.Data;
 using Agriculture_Equipment_Rental_System.Dto.Maintenance;
-using Agriculture_Equipment_Rental_System.Models;
+using Agriculture_Equipment_Rental_System.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Agriculture_Equipment_Rental_System.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class MaintenancesController : ControllerBase
     {
-        private readonly AgriMachineryDbContext _context;
+        private readonly IMaintenanceService _maintenanceService;
 
-        public MaintenancesController(AgriMachineryDbContext context)
+        public MaintenancesController(IMaintenanceService maintenanceService)
         {
-            _context = context;
+            _maintenanceService = maintenanceService;
         }
 
         // POST: api/Maintenance
         [HttpPost]
         public async Task<ActionResult<MaintenanceResponseDto>> CreateMaintenance(MaintenanceCreateDto dto)
         {
-            var machineryExists = await _context.Machineries.AnyAsync(m => m.MachineryId == dto.MachineryId);
-            if (!machineryExists) return BadRequest("Machinery not found.");
-
-            var maintenance = new Maintenance
-            {
-                MachineryId = dto.MachineryId,
-                MaintenanceDate = dto.MaintenanceDate,
-                IssueDescription = dto.IssueDescription,
-                Cost = dto.Cost,
-                NextServiceDate = dto.NextServiceDate,
-                Status = dto.Status
-            };
-
-            _context.Maintenances.Add(maintenance);
-            await _context.SaveChangesAsync();
-
-            var createdMaintenance = await _context.Maintenances
-                .Include(m => m.Machinery)
-                .FirstOrDefaultAsync(m => m.MaintenanceId == maintenance.MaintenanceId);
-
-            if (createdMaintenance == null) return NotFound();
-
-            var result = new MaintenanceResponseDto
-            {
-                MaintenanceId = createdMaintenance.MaintenanceId,
-                MachineryId = createdMaintenance.MachineryId,
-                MachineryName = createdMaintenance.Machinery.MachineName,
-                MaintenanceDate = createdMaintenance.MaintenanceDate,
-                IssueDescription = createdMaintenance.IssueDescription,
-                Cost = createdMaintenance.Cost,
-                NextServiceDate = createdMaintenance.NextServiceDate,
-                Status = createdMaintenance.Status
-            };
-
-            return CreatedAtAction(nameof(GetMaintenance), new { id = maintenance.MaintenanceId }, result);
+            var result = await _maintenanceService.CreateMaintenanceAsync(dto);
+            if (!result.Success) return BadRequest(result.ErrorMessage);
+            return CreatedAtAction(nameof(GetMaintenance), new { id = result.Data!.MaintenanceId }, result.Data);
         }
 
         // GET: api/Maintenance/5
         [HttpGet("{id}")]
         public async Task<ActionResult<MaintenanceResponseDto>> GetMaintenance(int id)
         {
-            var maintenance = await _context.Maintenances
-                .Include(m => m.Machinery)
-                .FirstOrDefaultAsync(m => m.MaintenanceId == id);
-
+            var maintenance = await _maintenanceService.GetMaintenanceAsync(id);
             if (maintenance == null) return NotFound();
-
-            return new MaintenanceResponseDto
-            {
-                MaintenanceId = maintenance.MaintenanceId,
-                MachineryId = maintenance.MachineryId,
-                MachineryName = maintenance.Machinery.MachineName,
-                MaintenanceDate = maintenance.MaintenanceDate,
-                IssueDescription = maintenance.IssueDescription,
-                Cost = maintenance.Cost,
-                NextServiceDate = maintenance.NextServiceDate,
-                Status = maintenance.Status
-            };
+            return maintenance;
         }
 
         // GET: api/Maintenance
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MaintenanceResponseDto>>> GetAllMaintenances()
         {
-            return await _context.Maintenances
-                .Include(m => m.Machinery)
-                .Select(maintenance => new MaintenanceResponseDto
-                {
-                    MaintenanceId = maintenance.MaintenanceId,
-                    MachineryId = maintenance.MachineryId,
-                    MachineryName = maintenance.Machinery.MachineName,
-                    MaintenanceDate = maintenance.MaintenanceDate,
-                    IssueDescription = maintenance.IssueDescription,
-                    Cost = maintenance.Cost,
-                    NextServiceDate = maintenance.NextServiceDate,
-                    Status = maintenance.Status
-                })
-                .ToListAsync();
+            return await _maintenanceService.GetAllMaintenancesAsync();
         }
 
         // PUT: api/Maintenance/5
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateMaintenance(int id, MaintenanceCreateDto dto)
         {
-            var maintenance = await _context.Maintenances.FindAsync(id);
-            if (maintenance == null) return NotFound();
-
-            var machineryExists = await _context.Machineries.AnyAsync(m => m.MachineryId == dto.MachineryId);
-            if (!machineryExists) return BadRequest("Machinery not found.");
-
-            maintenance.MachineryId = dto.MachineryId;
-            maintenance.MaintenanceDate = dto.MaintenanceDate;
-            maintenance.IssueDescription = dto.IssueDescription;
-            maintenance.Cost = dto.Cost;
-            maintenance.NextServiceDate = dto.NextServiceDate;
-            maintenance.Status = dto.Status;
-
-            await _context.SaveChangesAsync();
+            var result = await _maintenanceService.UpdateMaintenanceAsync(id, dto);
+            if (result.NotFound) return NotFound();
+            if (!result.Success) return BadRequest(result.ErrorMessage);
             return NoContent();
         }
 
@@ -126,11 +56,8 @@ namespace Agriculture_Equipment_Rental_System.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMaintenance(int id)
         {
-            var maintenance = await _context.Maintenances.FindAsync(id);
-            if (maintenance == null) return NotFound();
-
-            _context.Maintenances.Remove(maintenance);
-            await _context.SaveChangesAsync();
+            var result = await _maintenanceService.DeleteMaintenanceAsync(id);
+            if (result.NotFound) return NotFound();
             return NoContent();
         }
     }

@@ -6,11 +6,11 @@ namespace Agriculture_Equipment_Rental_System.Dto.Owner
 
     {
         public int OwnerId { get; set; }
-        public string OwnerName { get; set; }
-        public string Phone { get; set; }
+        public required string OwnerName { get; set; }
+        public required string Phone { get; set; }
         public required string Email { get; set; }
-        public string Address { get; set; }
-        public string BankAccountNo { get; set; }
+        public required string Address { get; set; }
+        public required string BankAccountNo { get; set; }
         public List<MachineryResponseDto> Machineries { get; set; } = new();
     }
 }

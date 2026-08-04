@@ -30,6 +30,8 @@ public partial class AgriMachineryDbContext : DbContext
 
     public virtual DbSet<Payment> Payments { get; set; }
 
+    public virtual DbSet<User> Users { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=Agriculture;Trusted_Connection=True;TrustServerCertificate=True;");
@@ -177,6 +179,24 @@ public partial class AgriMachineryDbContext : DbContext
                 .HasForeignKey(d => d.BookingId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Payment_Booking");
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+
+            entity.Property(e => e.Username)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Email)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.PasswordHash)
+                .HasMaxLength(300);
+            entity.Property(e => e.Role)
+                .HasMaxLength(20)
+                .IsUnicode(false);
+            entity.HasIndex(e => e.Username).IsUnique();
         });
 
         OnModelCreatingPartial(modelBuilder);

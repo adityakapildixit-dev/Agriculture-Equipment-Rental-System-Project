@@ -1,99 +1,60 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Agriculture_Equipment_Rental_System.Models;
-using Agriculture_Equipment_Rental_System.Data;
+using Agriculture_Equipment_Rental_System.Services.Interfaces;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class PaymentsController : ControllerBase
 {
-    private readonly AgriMachineryDbContext _context;
-    public PaymentsController(AgriMachineryDbContext context)
+    private readonly IPaymentService _paymentService;
+
+    public PaymentsController(IPaymentService paymentService)
     {
-        _context = context;
+        _paymentService = paymentService;
     }
 
     // GET: api/Payment
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Payment>>> GetPayment()
     {
-        return await _context.Payments.ToListAsync();
+        return await _paymentService.GetAllPaymentsAsync();
     }
 
     // GET: api/Payment/5
     [HttpGet("{paymentid}")]
     public async Task<ActionResult<Payment>> GetPayment(int paymentid)
     {
-        var payment = await _context.Payments.FindAsync(paymentid);
-
-        if (payment == null)
-        {
-            return NotFound();
-        }
-
+        var payment = await _paymentService.GetPaymentAsync(paymentid);
+        if (payment == null) return NotFound();
         return payment;
     }
 
     // PUT: api/Payment/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPut("{paymentid}")]
     public async Task<IActionResult> PutPayment(int? paymentid, Payment payment)
     {
-        if (paymentid != payment.PaymentId)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(payment).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!PaymentExists(paymentid))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
+        var result = await _paymentService.UpdatePaymentAsync(paymentid, payment);
+        if (result.NotFound) return NotFound();
+        if (!result.Success) return BadRequest(result.ErrorMessage);
         return NoContent();
     }
 
     // POST: api/Payment
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
     public async Task<ActionResult<Payment>> PostPayment(Payment payment)
     {
-        _context.Payments.Add(payment);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetPayment", new { paymentid = payment.PaymentId }, payment);
+        var created = await _paymentService.CreatePaymentAsync(payment);
+        return CreatedAtAction("GetPayment", new { paymentid = created.PaymentId }, created);
     }
 
     // DELETE: api/Payment/5
     [HttpDelete("{paymentid}")]
     public async Task<IActionResult> DeletePayment(int? paymentid)
     {
-        var payment = await _context.Payments.FindAsync(paymentid);
-        if (payment == null)
-        {
-            return NotFound();
-        }
-
-        _context.Payments.Remove(payment);
-        await _context.SaveChangesAsync();
-
+        var result = await _paymentService.DeletePaymentAsync(paymentid);
+        if (result.NotFound) return NotFound();
         return NoContent();
-    }
-
-    private bool PaymentExists(int? paymentid)
-    {
-        return _context.Payments.Any(e => e.PaymentId == paymentid);
     }
 }
