@@ -1,11 +1,14 @@
 using Agriculture_Equipment_Rental_System.Dto.Auth;
 using Agriculture_Equipment_Rental_System.Services.Interfaces;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Agriculture_Equipment_Rental_System.Controllers
 {
+    
     [ApiController]
     [Route("api/[controller]")]
+    [EnableCors("AllowReactApp")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;

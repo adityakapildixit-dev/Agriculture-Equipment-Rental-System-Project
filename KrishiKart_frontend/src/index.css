@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
+  body {
+    @apply bg-[#f6f3ec] text-moss-950;
+  }
+  ::selection {
+    @apply bg-harvest-300/70;
+  }
+  :focus-visible {
+    outline: 2px solid #da8f1c;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .field-label {
+    @apply block text-xs font-semibold uppercase tracking-wide text-moss-700 mb-1.5;
+  }
+  .field-input {
+    @apply w-full rounded-md border border-moss-200 bg-white px-3 py-2 text-sm text-moss-950
+           placeholder:text-moss-400 focus:border-harvest-500 focus:ring-2 focus:ring-harvest-200
+           outline-none transition;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold
+           transition disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-moss-700 text-white hover:bg-moss-800 active:bg-moss-900;
+  }
+  .btn-accent {
+    @apply btn bg-harvest-500 text-moss-950 hover:bg-harvest-600;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-moss-700 hover:bg-moss-100;
+  }
+  .btn-danger {
+    @apply btn bg-transparent text-red-700 hover:bg-red-50;
+  }
+  .card {
+    @apply bg-white border border-moss-100 rounded-xl shadow-[0_1px_2px_rgba(40,57,31,0.06)];
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}
